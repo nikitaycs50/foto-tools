@@ -88,7 +88,7 @@ ISO Distribution (Bin width: 310):
 Analysis Complete! Thank you for using this script.
 ```
 
-![Example Output](https://github.com/nikitaycs50/foto-tools/EXIF/EXIF-Output-Example.png)
+![Example Output](https://github.com/nikitaycs50/foto-tools/blob/main/EXIF/EXIF-Output-Example.png)
 
 ## Notes
 
