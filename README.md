@@ -1,7 +1,7 @@
 
 # JPG EXIF Data Analysis and Histogram Plotter
 
-A Bash script that parses JPG files in a specified directory to extract and analyze EXIF data for **Aperture**, **Focal Length**, and **ISO**. It generates a summary table with minimum, maximum, and average values, followed by colored text-based histograms for each metric.
+A Bash script that parses JPG files in a specified directory to extract and analyze EXIF data for **Aperture**, **Focal Length**, and **ISO**. It generates a summary table with minimum, maximum, and median values, followed by colored text-based histograms for each metric.
 
 ## Features
 
@@ -9,9 +9,9 @@ A Bash script that parses JPG files in a specified directory to extract and anal
 - Calculates and displays:
   - **Minimum Value**
   - **Maximum Value**
-  - **Average Value**
+  - **Median Value**
 - Generates text-based histograms with bins and percentages.
-- Highlights the average value in each histogram.
+- Highlights the median value in each histogram.
 - Skips bins with zero data for cleaner output.
 - Colored output for better readability.
 
@@ -67,7 +67,7 @@ ISOs:
 Aperture Distribution (Bin width: 2.12):
   1.40 -   3.52: ################################################## (30.65%)
   3.52 -   5.64: ################## (11.29%)
-  5.64 -   7.76: ####################### << AVG=6.35323 (14.52%)
+  5.64 -   7.76: ####################### << MEDIAN=6.35323 (14.52%)
   7.76 -   9.88: ############################################### (29.03%)
   9.88 -  12.00: ################## (11.29%)
  14.12 -  16.24: ## (1.61%)
@@ -75,7 +75,7 @@ Aperture Distribution (Bin width: 2.12):
 Focal Length Distribution (Bin width: 18.3):
  17.00 -  35.30: ############################ (27.42%)
  35.30 -  53.60: ################################################## (48.39%)
- 53.60 -  71.90: ##### << AVG=60.8387 (4.84%)
+ 53.60 -  71.90: ##### << MEDIAN=60.8387 (4.84%)
  90.20 - 108.50: ########### (11.29%)
 145.10 - 163.40: # (1.61%)
 
@@ -92,7 +92,7 @@ Analysis Complete! Thank you for using this script.
 
 ## Notes
 
-- **Empty Bins**: Bins with no data are omitted to avoid clutter and ensure accurate averages.
+- **Empty Bins**: Bins with no data are omitted to avoid clutter and ensure accurate median values.
 - **Adjustable Bins**: The number of bins for histograms can be adjusted in the script.
 
 ## License
