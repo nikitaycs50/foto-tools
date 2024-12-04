@@ -65,15 +65,25 @@ for file in "$folder_path"/*.jpg "$folder_path"/*.JPG; do
     fi
 done
 
-# Function to calculate min, max, and average
+# Function to calculate min, max, and median
 calculate_stats() {
     local values=("$@")
     local min=$(printf "%s\n" "${values[@]}" | sort -n | head -n1)
     local max=$(printf "%s\n" "${values[@]}" | sort -n | tail -n1)
-    local sum=$(printf "%s\n" "${values[@]}" | awk '{s+=$1} END {print s}')
-    local count=${#values[@]}
-    local avg=$(awk "BEGIN {print $sum / $count}")
-    echo "$min $max $avg"
+
+    # Calculate the median
+    local sorted=($(printf "%s\n" "${values[@]}" | sort -n))
+    local count=${#sorted[@]}
+    if (( count % 2 == 1 )); then
+        # Odd count, take the middle value
+        local median=${sorted[$((count / 2))]}
+    else
+        # Even count, take the average of the two middle values
+        local mid=$((count / 2))
+        local median=$(awk "BEGIN {print (${sorted[$mid - 1]} + ${sorted[$mid]}) / 2}")
+    fi
+
+    echo "$min $max $median"
 }
 
 # Function to create histogram
@@ -106,9 +116,9 @@ create_histogram() {
         done
     done
 
-    # Calculate total and average
+    # Calculate total and median
     local total_photos=${#values[@]}
-    local average=$(calculate_stats "${values[@]}" | awk '{print $3}')
+    local median=$(calculate_stats "${values[@]}" | awk '{print $3}')
 
     # Plot the histogram
     echo -e "\033[36m$title Distribution (Bin width: $bin_width):\033[0m"
@@ -128,8 +138,8 @@ create_histogram() {
         local scaled_count=$(awk "BEGIN {printf \"%d\", $count / $scale}")
         local bar=$(printf "%0.s#" $(seq 1 "$scaled_count"))
 
-        if (( $(awk "BEGIN {print ($average >= $lower_bound && $average < $upper_bound)}") )); then
-            echo -e "$(printf "%6.2f" "$lower_bound") - $(printf "%6.2f" "$upper_bound"): \033[32m$bar << AVG=$average ($percentage%)\033[0m"
+        if (( $(awk "BEGIN {print ($median >= $lower_bound && $median < $upper_bound)}") )); then
+            echo -e "$(printf "%6.2f" "$lower_bound") - $(printf "%6.2f" "$upper_bound"): \033[32m$bar << MEDIAN=$median ($percentage%)\033[0m"
         else
             echo "$(printf "%6.2f" "$lower_bound") - $(printf "%6.2f" "$upper_bound"): $bar ($percentage%)"
         fi
@@ -140,29 +150,29 @@ create_histogram() {
 # Calculate and display statistics
 echo -e "\033[34mSummary Table:\033[0m"
 if [ ${#apertures[@]} -gt 0 ]; then
-    read -r min max avg <<< $(calculate_stats "${apertures[@]}")
+    read -r min max median <<< $(calculate_stats "${apertures[@]}")
     echo -e "\033[35mApertures (f):\033[0m"
     echo "  Min: $min"
     echo "  Max: $max"
-    echo "  Avg: $avg"
+    echo "  Median: $median"
     echo
 fi
 
 if [ ${#focal_lengths[@]} -gt 0 ]; then
-    read -r min max avg <<< $(calculate_stats "${focal_lengths[@]}")
+    read -r min max median <<< $(calculate_stats "${focal_lengths[@]}")
     echo -e "\033[35mFocal Lengths (mm):\033[0m"
     echo "  Min: $min"
     echo "  Max: $max"
-    echo "  Avg: $avg"
+    echo "  Median: $median"
     echo
 fi
 
 if [ ${#isos[@]} -gt 0 ]; then
-    read -r min max avg <<< $(calculate_stats "${isos[@]}")
+    read -r min max median <<< $(calculate_stats "${isos[@]}")
     echo -e "\033[35mISOs:\033[0m"
     echo "  Min: $min"
     echo "  Max: $max"
-    echo "  Avg: $avg"
+    echo "  Median: $median"
     echo
 fi
 
