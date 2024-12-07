@@ -1,18 +1,13 @@
 #!/bin/bash
 #
-# Copyright (c) 2024, Your Name
+# Copyright (C) 2024, NikitaY
+# me @ nikitay.com
 # All Rights Reserved.
 #
 # This script parses JPG files in a given directory to extract and analyze EXIF data
 # for Aperture, Focal Length, and ISO. It generates statistical summaries and
 # creates colored text-based bar charts.
 #
-
-# Ensure exiftool is installed
-if ! command -v exiftool &>/dev/null; then
-    echo -e "\033[31mError:\033[0m exiftool is not installed. Please install it with 'brew install exiftool'."
-    exit 1
-fi
 
 # Display a banner
 echo -e "\033[36m"
@@ -27,7 +22,13 @@ echo "##############################################################"
 echo -e "\033[0m"
 echo
 
-# Check if a folder path is provided
+##################### Ensure exiftool is installed
+if ! command -v exiftool &>/dev/null; then
+    echo -e "\033[31mError:\033[0m exiftool is not installed. Please install it with 'brew install exiftool'."
+    exit 1
+fi
+
+##################### Check if a folder path is provided
 if [ -z "$1" ]; then
     echo
     echo -e "\033[33mUsage:\033[0m $0 <path_to_folder_with_jpgs>"
@@ -35,22 +36,22 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Get the folder path
+##################### Get the folder path
 folder_path="$1"
 
-# Check if the path exists and is a directory
+##################### Check if the path exists and is a directory
 if [ ! -d "$folder_path" ]; then
     echo
     echo -e "\033[31mError:\033[0m The path '$folder_path' does not exist or is not a directory."
     exit 1
 fi
 
-# Initialize variables
+##################### Initialize variables
 focal_lengths=()
 apertures=()
 isos=()
 
-# Parse all JPG files in the specified directory
+##################### Parse all JPG files in the specified directory
 for file in "$folder_path"/*.jpg "$folder_path"/*.JPG; do
     if [ -f "$file" ]; then
         # Extract focal length, aperture, and ISO
@@ -65,7 +66,7 @@ for file in "$folder_path"/*.jpg "$folder_path"/*.JPG; do
     fi
 done
 
-# Function to calculate min, max, and median
+##################### Function to calculate min, max, and median
 calculate_stats() {
     local values=("$@")
     local min=$(printf "%s\n" "${values[@]}" | sort -n | head -n1)
@@ -86,7 +87,7 @@ calculate_stats() {
     echo "$min $max $median"
 }
 
-# Function to create histogram
+##################### Function to create histogram
 create_histogram() {
     local values=("$@")
     local title=$1
@@ -104,7 +105,7 @@ create_histogram() {
         bin_counts+=(0)
     done
 
-    # Populate histogram
+    ##################### Populate histogram
     for value in "${values[@]}"; do
         for ((i=0; i<bins; i++)); do
             local lower_bound=${bin_starts[i]}
@@ -116,11 +117,11 @@ create_histogram() {
         done
     done
 
-    # Calculate total and median
+    ##################### Calculate total and median
     local total_photos=${#values[@]}
     local median=$(calculate_stats "${values[@]}" | awk '{print $3}')
 
-    # Plot the histogram
+    ##################### Plot the histogram
     echo -e "\033[36m$title Distribution (Bin width: $bin_width):\033[0m"
     local max_count=$(printf "%s\n" "${bin_counts[@]}" | sort -nr | head -n1)
     local scale=$(awk "BEGIN {print $max_count / 50}") # Scale for bar chart width
@@ -147,7 +148,7 @@ create_histogram() {
     echo
 }
 
-# Calculate and display statistics
+##################### Calculate and display statistics
 echo -e "\033[34mSummary Table:\033[0m"
 if [ ${#apertures[@]} -gt 0 ]; then
     read -r min max median <<< $(calculate_stats "${apertures[@]}")
@@ -176,7 +177,7 @@ if [ ${#isos[@]} -gt 0 ]; then
     echo
 fi
 
-# Plot histograms
+##################### Plot histograms
 if [ ${#apertures[@]} -gt 0 ]; then
     create_histogram "Aperture (f)" 10 "${apertures[@]}"
 fi
@@ -189,4 +190,7 @@ if [ ${#isos[@]} -gt 0 ]; then
     create_histogram "ISO" 10 "${isos[@]}"
 fi
 
+##################### Final thank you and exit(0)
 echo -e "\033[32mAnalysis Complete! Thank you for using this script.\033[0m"
+exit 0
+
