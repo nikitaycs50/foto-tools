@@ -24,7 +24,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default compression command (modify as needed)
-DEFAULT_COMPRESS_CMD="jpegoptim --max=85 --preserve --strip-all"
+# Using imagemagick's convert command which is more commonly available
+DEFAULT_COMPRESS_CMD="convert -quality 75"
 
 # Get compression command from argument or use default
 COMPRESS_CMD="${1:-$DEFAULT_COMPRESS_CMD}"
@@ -41,12 +42,12 @@ log_message() {
 show_progress() {
     local current=$1
     local total=$2
-    local width=50
+    local width=20
     local percentage=$((current * 100 / total))
     local filled=$((current * width / total))
     local empty=$((width - filled))
     
-    printf "\rProgress: ["
+    printf "\r["
     printf "%*s" $filled | tr ' ' '='
     printf "%*s" $empty | tr ' ' '-'
     printf "] %d%% (%d/%d)" $percentage $current $total
@@ -76,7 +77,17 @@ check_compression_tool() {
     local tool=$(echo "$COMPRESS_CMD" | awk '{print $1}')
     if ! command -v "$tool" &> /dev/null; then
         log_message "CRITICAL" "Compression tool '$tool' is not installed or not in PATH"
-        echo -e "${RED}CRITICAL ERROR: '$tool' not found. Please install it first.${NC}"
+        echo -e "${RED}CRITICAL ERROR: '$tool' not found.${NC}"
+        echo
+        echo -e "${YELLOW}Common installation options for macOS:${NC}"
+        echo "  • ImageMagick: brew install imagemagick"
+        echo "  • jpegoptim: brew install jpegoptim"
+        echo "  • mozjpeg: brew install mozjpeg"
+        echo
+        echo -e "${BLUE}Or specify a custom command:${NC}"
+        echo "  ./compress_my_photos.sh \"convert -quality 75\""
+        echo "  ./compress_my_photos.sh \"jpegoptim --max=75\""
+        echo
         exit 1
     fi
     log_message "INFO" "Using compression command: $COMPRESS_CMD"
@@ -115,30 +126,44 @@ process_folder() {
     # Process each file
     for file in "${folder_files[@]}"; do
         local filename=$(basename "$file")
-        printf "  Processing: %s... " "$filename"
+        printf "  %-30s " "$filename"
         
         # Create backup of original file size for comparison
         local original_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
         
         # Execute compression command
-        if eval "$COMPRESS_CMD \"$file\"" >> "$LOG_FILE" 2>&1; then
+        if [[ "$COMPRESS_CMD" == convert* ]]; then
+            # ImageMagick convert needs special handling (input file, output file)
+            local temp_file="${file}.tmp"
+            if eval "$COMPRESS_CMD \"$file\" \"$temp_file\"" >> "$LOG_FILE" 2>&1; then
+                mv "$temp_file" "$file" 2>/dev/null || { rm -f "$temp_file"; false; }
+            else
+                rm -f "$temp_file" 2>/dev/null
+                false
+            fi
+        else
+            # Standard in-place compression tools
+            eval "$COMPRESS_CMD \"$file\"" >> "$LOG_FILE" 2>&1
+        fi
+        
+        if [ $? -eq 0 ]; then
             local new_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
-            local saved_bytes=$((original_size - new_size))
-            local saved_percent=0
+            local size_percent=100
             if [ $original_size -gt 0 ]; then
-                saved_percent=$((saved_bytes * 100 / original_size))
+                size_percent=$((new_size * 100 / original_size))
             fi
             
-            echo -e "${GREEN}OK${NC} (saved: ${saved_bytes} bytes, ${saved_percent}%)"
-            log_message "SUCCESS" "$file: saved $saved_bytes bytes ($saved_percent%)"
+            printf "${GREEN}%d%%${NC} " $size_percent
+            log_message "SUCCESS" "$file: compressed to $size_percent% of original ($new_size bytes)"
             folder_success=$((folder_success + 1))
             TOTAL_FILES=$((TOTAL_FILES + 1))
             show_progress $TOTAL_FILES $(count_jpeg_files)
         else
-            echo -e "${RED}FAILED${NC}"
+            echo -e "${RED}FAIL${NC}"
             handle_error "Failed to compress $filename" "$folder"
             folder_errors=$((folder_errors + 1))
         fi
+        echo  # New line after progress bar
     done
     
     # Record folder processing result
@@ -235,4 +260,3 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # Run main function
     main "$@"
 fi
-
